@@ -29,10 +29,10 @@ param searchUrlColumn string = 'url'
 
 param openAiResourceName string = ''
 param openAiResourceGroupName string = ''
-param openAiResourceGroupLocation string = location
+param openAIlocation string
 param openAiSkuName string = ''
-param openAIModel string = 'turbo16k'
-param openAIModelName string = 'gpt-35-turbo-16k'
+param openAIModel string = 'gpt-4'
+param openAIModelName string = 'gpt-4'
 param openAITemperature int = 0
 param openAITopP int = 1
 param openAIMaxTokens int = 1000
@@ -53,9 +53,6 @@ param formRecognizerSkuName string = ''
 param authClientId string
 @secure()
 param authClientSecret string
-
-// Used for Cosmos DB
-param cosmosAccountName string = ''
 
 @description('Id of the user or app to assign application roles')
 param principalId string = ''
@@ -149,7 +146,7 @@ module openAi 'core/ai/cognitiveservices.bicep' = {
   scope: openAiResourceGroup
   params: {
     name: !empty(openAiResourceName) ? openAiResourceName : '${abbrs.cognitiveServicesAccounts}${resourceToken}'
-    location: openAiResourceGroupLocation
+    location: openAIlocation
     tags: tags
     sku: {
       name: !empty(openAiSkuName) ? openAiSkuName : 'S0'
@@ -196,80 +193,67 @@ module searchService 'core/search/search-services.bicep' = {
   }
 }
 
-// The application database
-module cosmos 'db.bicep' = {
-  name: 'cosmos'
-  scope: resourceGroup
-  params: {
-    accountName: !empty(cosmosAccountName) ? cosmosAccountName : '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
-    location: 'eastus'
-    tags: tags
-    principalIds: [principalId, backend.outputs.identityPrincipalId]
-  }
-}
+// // USER ROLES
+// module openAiRoleUser 'core/security/role.bicep' = {
+//   scope: openAiResourceGroup
+//   name: 'openai-role-user'
+//   params: {
+//     principalId: principalId
+//     roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+//     principalType: 'User'
+//   }
+// }
 
+// module searchRoleUser 'core/security/role.bicep' = {
+//   scope: searchServiceResourceGroup
+//   name: 'search-role-user'
+//   params: {
+//     principalId: principalId
+//     roleDefinitionId: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
+//     principalType: 'User'
+//   }
+// }
 
-// USER ROLES
-module openAiRoleUser 'core/security/role.bicep' = {
-  scope: openAiResourceGroup
-  name: 'openai-role-user'
-  params: {
-    principalId: principalId
-    roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
-    principalType: 'User'
-  }
-}
+// module searchIndexDataContribRoleUser 'core/security/role.bicep' = {
+//   scope: searchServiceResourceGroup
+//   name: 'search-index-data-contrib-role-user'
+//   params: {
+//     principalId: principalId
+//     roleDefinitionId: '8ebe5a00-799e-43f5-93ac-243d3dce84a7'
+//     principalType: 'User'
+//   }
+// }
 
-module searchRoleUser 'core/security/role.bicep' = {
-  scope: searchServiceResourceGroup
-  name: 'search-role-user'
-  params: {
-    principalId: principalId
-    roleDefinitionId: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
-    principalType: 'User'
-  }
-}
+// module searchServiceContribRoleUser 'core/security/role.bicep' = {
+//   scope: searchServiceResourceGroup
+//   name: 'search-service-contrib-role-user'
+//   params: {
+//     principalId: principalId
+//     roleDefinitionId: '7ca78c08-252a-4471-8644-bb5ff32d4ba0'
+//     principalType: 'User'
+//   }
+// }
 
-module searchIndexDataContribRoleUser 'core/security/role.bicep' = {
-  scope: searchServiceResourceGroup
-  name: 'search-index-data-contrib-role-user'
-  params: {
-    principalId: principalId
-    roleDefinitionId: '8ebe5a00-799e-43f5-93ac-243d3dce84a7'
-    principalType: 'User'
-  }
-}
+// // SYSTEM IDENTITIES
+// module openAiRoleBackend 'core/security/role.bicep' = {
+//   scope: openAiResourceGroup
+//   name: 'openai-role-backend'
+//   params: {
+//     principalId: backend.outputs.identityPrincipalId
+//     roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+//     principalType: 'ServicePrincipal'
+//   }
+// }
 
-module searchServiceContribRoleUser 'core/security/role.bicep' = {
-  scope: searchServiceResourceGroup
-  name: 'search-service-contrib-role-user'
-  params: {
-    principalId: principalId
-    roleDefinitionId: '7ca78c08-252a-4471-8644-bb5ff32d4ba0'
-    principalType: 'User'
-  }
-}
-
-// SYSTEM IDENTITIES
-module openAiRoleBackend 'core/security/role.bicep' = {
-  scope: openAiResourceGroup
-  name: 'openai-role-backend'
-  params: {
-    principalId: backend.outputs.identityPrincipalId
-    roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
-    principalType: 'ServicePrincipal'
-  }
-}
-
-module searchRoleBackend 'core/security/role.bicep' = {
-  scope: searchServiceResourceGroup
-  name: 'search-role-backend'
-  params: {
-    principalId: backend.outputs.identityPrincipalId
-    roleDefinitionId: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
-    principalType: 'ServicePrincipal'
-  }
-}
+// module searchRoleBackend 'core/security/role.bicep' = {
+//   scope: searchServiceResourceGroup
+//   name: 'search-role-backend'
+//   params: {
+//     principalId: backend.outputs.identityPrincipalId
+//     roleDefinitionId: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
+//     principalType: 'ServicePrincipal'
+//   }
+// }
 
 // For doc prep
 module docPrepResources 'docprep.bicep' = {
@@ -329,10 +313,6 @@ output AZURE_OPENAI_STREAM bool = openAIStream
 output AZURE_FORMRECOGNIZER_SERVICE string = docPrepResources.outputs.AZURE_FORMRECOGNIZER_SERVICE
 output AZURE_FORMRECOGNIZER_RESOURCE_GROUP string = docPrepResources.outputs.AZURE_FORMRECOGNIZER_RESOURCE_GROUP
 output AZURE_FORMRECOGNIZER_SKU_NAME string = docPrepResources.outputs.AZURE_FORMRECOGNIZER_SKU_NAME
-
-// cosmos
-output AZURE_COSMOSDB_ACCOUNT string = cosmos.outputs.accountName
-output AZURE_COSMOSDB_DATABASE string = cosmos.outputs.databaseName
-output AZURE_COSMOSDB_CONVERSATIONS_CONTAINER string = cosmos.outputs.containerName
+output AZURE_FORMRECOGNIZER_KEY string = docPrepResources.outputs.AZURE_FORMRECOGNIZER_KEY
 
 output AUTH_ISSUER_URI string = authIssuerUri

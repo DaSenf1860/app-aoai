@@ -142,7 +142,7 @@
         },
         "AzureOpenAIModelName": {
             "type": "string",
-            "defaultValue": "gpt-35-turbo",
+            "defaultValue": "gpt-4",
             "metadata": {
                 "description": "Azure OpenAI Model Name"
             }

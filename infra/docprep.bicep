@@ -35,18 +35,19 @@ module formRecognizer 'core/ai/cognitiveservices.bicep' = {
   }
 }
 
-module formRecognizerRoleUser 'core/security/role.bicep' = {
-  scope: formRecognizerResourceGroup
-  name: 'formrecognizer-role-user'
-  params: {
-    principalId: principalId
-    roleDefinitionId: 'a97b65f3-24c7-4388-baec-2e87135dc908'
-    principalType: 'User'
-  }
-}
+// module formRecognizerRoleUser 'core/security/role.bicep' = {
+//   scope: formRecognizerResourceGroup
+//   name: 'formrecognizer-role-user'
+//   params: {
+//     principalId: principalId
+//     roleDefinitionId: 'a97b65f3-24c7-4388-baec-2e87135dc908'
+//     principalType: 'User'
+//   }
+// }
 
 // Used by prepdocs
 // Form recognizer
 output AZURE_FORMRECOGNIZER_SERVICE string = formRecognizer.outputs.name
 output AZURE_FORMRECOGNIZER_RESOURCE_GROUP string = formRecognizerResourceGroup.name
 output AZURE_FORMRECOGNIZER_SKU_NAME string = formRecognizerSkuName
+output AZURE_FORMRECOGNIZER_KEY string = formRecognizer.outputs.key

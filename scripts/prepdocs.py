@@ -1,4 +1,7 @@
+from dotenv import load_dotenv
+import os
 import argparse
+
 import dataclasses
 import time
 
@@ -127,7 +130,7 @@ def validate_index(index_name, index_client):
 
 
 def create_and_populate_index(
-    index_name, index_client, search_client, form_recognizer_client, azure_credential, embedding_endpoint
+    index_name, index_client, search_client, form_recognizer_client, embeddingkey, embedding_endpoint
 ):
     # create or update search index with compatible schema
     create_search_index(index_name, index_client)
@@ -135,13 +138,13 @@ def create_and_populate_index(
     # chunk directory
     print("Chunking directory...")
     result = chunk_directory(
-        "./data",
+        "./data/{0}".format(os.getenv("AZURE_ENV_NAME")),
         form_recognizer_client=form_recognizer_client,
         use_layout=True,
         ignore_errors=False,
         njobs=1,
         add_embeddings=True,
-        azure_credential=azd_credential,
+        embeddingkey=embeddingkey,
         embedding_endpoint=embedding_endpoint
     )
 
@@ -168,69 +171,39 @@ if __name__ == "__main__":
         description="Prepare documents by extracting content from PDFs, splitting content into sections and indexing in a search index.",
         epilog="Example: prepdocs.py --searchservice mysearch --index myindex",
     )
+
     parser.add_argument(
-        "--tenantid",
+        "--env",
         required=False,
         help="Optional. Use this to define the Azure directory where to authenticate)",
     )
-    parser.add_argument(
-        "--searchservice",
-        help="Name of the Azure Cognitive Search service where content should be indexed (must exist already)",
-    )
-    parser.add_argument(
-        "--index",
-        help="Name of the Azure Cognitive Search index where content should be indexed (will be created if it doesn't exist)",
-    )
-    parser.add_argument(
-        "--searchkey",
-        required=False,
-        help="Optional. Use this Azure Cognitive Search account key instead of the current user identity to login (use az login to set current user for Azure)",
-    )
-    parser.add_argument(
-        "--formrecognizerservice",
-        required=False,
-        help="Optional. Name of the Azure Form Recognizer service which will be used to extract text, tables and layout from the documents (must exist already)",
-    )
-    parser.add_argument(
-        "--formrecognizerkey",
-        required=False,
-        help="Optional. Use this Azure Form Recognizer account key instead of the current user identity to login (use az login to set current user for Azure)",
-    )
-    parser.add_argument(
-        "--embeddingendpoint",
-        required=False,
-        help="Optional. Use this OpenAI endpoint to generate embeddings for the documents",
-    )
+
     args = parser.parse_args()
 
-    # Use the current user identity to connect to Azure services unless a key is explicitly set for any of them
-    azd_credential = (
-        AzureDeveloperCliCredential()
-        if args.tenantid == None
-        else AzureDeveloperCliCredential(tenant_id=args.tenantid, process_timeout=60)
-    )
-    default_creds = azd_credential if args.searchkey == None else None
-    search_creds = (
-        default_creds if args.searchkey == None else AzureKeyCredential(args.searchkey)
-    )
-    formrecognizer_creds = (
-        default_creds
-        if args.formrecognizerkey == None
-        else AzureKeyCredential(args.formrecognizerkey)
-    )
+    load_dotenv(".azure/{0}/.env".format(args.env), override=True)
+
+    searchservice = os.getenv("AZURE_SEARCH_SERVICE")
+    searchindex = os.getenv("AZURE_SEARCH_INDEX")
+    search_creds = AzureKeyCredential(os.getenv("AZURE_SEARCH_KEY"))
+
+    formrecognizerservice = os.getenv("AZURE_FORMRECOGNIZER_SERVICE")
+    formrecognizer_creds = AzureKeyCredential(os.getenv("AZURE_FORMRECOGNIZER_KEY"))
+
+    embeddingendpoint = os.getenv("AZURE_OPENAI_EMBEDDING_ENDPOINT")
+    embeddingkey = AzureKeyCredential(os.getenv("AZURE_OPENAI_EMBEDDING_KEY"))
 
     print("Data preparation script started")
-    print("Preparing data for index:", args.index)
-    search_endpoint = f"https://{args.searchservice}.search.windows.net/"
+    print("Preparing data for index:", searchindex)
+    search_endpoint = f"https://{searchservice}.search.windows.net/"
     index_client = SearchIndexClient(endpoint=search_endpoint, credential=search_creds)
     search_client = SearchClient(
-        endpoint=search_endpoint, credential=search_creds, index_name=args.index
+        endpoint=search_endpoint, credential=search_creds, index_name=searchindex
     )
     form_recognizer_client = DocumentAnalysisClient(
-        endpoint=f"https://{args.formrecognizerservice}.cognitiveservices.azure.com/",
+        endpoint=f"https://{formrecognizerservice}.cognitiveservices.azure.com/",
         credential=formrecognizer_creds,
     )
     create_and_populate_index(
-        args.index, index_client, search_client, form_recognizer_client, azd_credential, args.embeddingendpoint
+        searchindex, index_client, search_client, form_recognizer_client, embeddingkey, embeddingendpoint
     )
-    print("Data preparation for index", args.index, "completed")
+    print("Data preparation for index", searchindex, "completed")

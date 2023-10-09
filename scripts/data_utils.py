@@ -436,7 +436,7 @@ def merge_chunks_serially(chunked_content_list: List[str], num_tokens: int) -> G
         yield current_chunk, total_size
 
 
-def get_embedding(text, azure_credential, embedding_endpoint):
+def get_embedding(text, embeddingkey, embedding_endpoint):
     try:
         endpoint_parts = embedding_endpoint.split("/openai/deployments/")
         base_url = endpoint_parts[0]
@@ -444,8 +444,8 @@ def get_embedding(text, azure_credential, embedding_endpoint):
 
         openai.api_version = '2023-05-15'
         openai.api_base = base_url
-        openai.api_key = azure_credential.get_token("https://cognitiveservices.azure.com/.default").token
-        openai.api_type = "azure_ad"
+        openai.api_key = embeddingkey.key
+        openai.api_type = "azure"
 
         embeddings = openai.Embedding.create(deployment_id=deployment_id, input=text)
         return embeddings['data'][0]["embedding"]
@@ -504,7 +504,7 @@ def chunk_content(
     cracked_pdf = False,
     use_layout = False,
     add_embeddings = False,
-    azure_credential = None,
+    embeddingkey = None,
     embedding_endpoint = None
 ) -> ChunkingResult:
     """Chunks the given content. If ignore_errors is true, returns None
@@ -546,7 +546,7 @@ def chunk_content(
                 if add_embeddings:
                     for _ in range(RETRY_COUNT):
                         try:
-                            doc.contentVector = get_embedding(chunk, azure_credential, embedding_endpoint)
+                            doc.contentVector = get_embedding(chunk, embeddingkey, embedding_endpoint)
                             break
                         except:
                             sleep(30)
@@ -594,7 +594,7 @@ def chunk_file(
     form_recognizer_client = None,
     use_layout = False,
     add_embeddings=False,
-    azure_credential = None,
+    embeddingkey = None,
     embedding_endpoint = None
 ) -> ChunkingResult:
     """Chunks the given file.
@@ -642,7 +642,7 @@ def chunk_file(
         cracked_pdf=cracked_pdf,
         use_layout=use_layout,
         add_embeddings=add_embeddings,
-        azure_credential=azure_credential,
+        embeddingkey=embeddingkey,
         embedding_endpoint=embedding_endpoint
     )
 
@@ -659,7 +659,7 @@ def process_file(
         form_recognizer_client = None,
         use_layout = False,
         add_embeddings = False,
-        azure_credential = None,
+        embeddingkey = None,
         embedding_endpoint = None
     ):
 
@@ -685,7 +685,7 @@ def process_file(
             form_recognizer_client=form_recognizer_client,
             use_layout=use_layout,
             add_embeddings=add_embeddings,
-            azure_credential=azure_credential,
+            embeddingkey=embeddingkey,
             embedding_endpoint=embedding_endpoint
         )
         for chunk_idx, chunk_doc in enumerate(result.chunks):
@@ -712,7 +712,7 @@ def chunk_directory(
         use_layout = False,
         njobs=4,
         add_embeddings = False,
-        azure_credential = None,
+        embeddingkey = None,
         embedding_endpoint = None
 ):
     """
@@ -755,7 +755,7 @@ def chunk_directory(
                                        token_overlap=token_overlap,
                                        extensions_to_process=extensions_to_process,
                                        form_recognizer_client=form_recognizer_client, use_layout=use_layout, add_embeddings=add_embeddings,
-                                       azure_credential=azure_credential, embedding_endpoint=embedding_endpoint)
+                                       embeddingkey=embeddingkey, embedding_endpoint=embedding_endpoint)
             if is_error:
                 num_files_with_errors += 1
                 continue
@@ -771,7 +771,7 @@ def chunk_directory(
                                        token_overlap=token_overlap,
                                        extensions_to_process=extensions_to_process,
                                        form_recognizer_client=None, use_layout=use_layout, add_embeddings=add_embeddings,
-                                       azure_credential=azure_credential, embedding_endpoint=embedding_endpoint)
+                                       embeddingkey=embeddingkey, embedding_endpoint=embedding_endpoint)
         with ProcessPoolExecutor(max_workers=njobs) as executor:
             futures = list(tqdm(executor.map(process_file_partial, files_to_process), total=len(files_to_process)))
             for result, is_error in futures:
