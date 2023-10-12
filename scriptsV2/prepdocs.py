@@ -31,9 +31,6 @@ from azure.search.documents.indexes.models import (
     VectorSearchAlgorithmConfiguration,
 )
 from azure.storage.blob import BlobServiceClient
-from azure.storage.filedatalake import (
-    DataLakeServiceClient,
-)
 from pypdf import PdfReader, PdfWriter
 from tenacity import (
     retry,
@@ -499,7 +496,8 @@ def read_files(
     Recursively read directory structure under `path_pattern`
     and execute indexing for the individual files
     """
-    for filename in glob.glob(path_pattern):
+    for filename in sorted(glob.glob(path_pattern), reverse=True):
+
         if verbose:
             print(f"Processing '{filename}'")
 
@@ -520,9 +518,11 @@ def read_files(
         if use_vectors and vectors_batch_support:
             sections = update_embeddings_in_batch(sections)
         index_sections(os.path.basename(filename), sections)
+        file_n = str(filename).split("\\")[-1]
+        folder = filename[:-(len(file_n)+1)]
+        os.rename(filename, "{0}_archive/{1}".format(folder, file_n))
 
-
-
+        
 def read_adls_gen2_files(
     use_vectors: bool, vectors_batch_support: bool, embedding_deployment: str = None, embedding_model: str = None
 ):
@@ -592,8 +592,6 @@ if __name__ == "__main__":
         description="Prepare documents by extracting content from PDFs, splitting content into sections, uploading to blob storage, and indexing in a search index.",
         epilog="Example: prepdocs.py '..\data\*' --storageaccount myaccount --container mycontainer --searchservice mysearch --index myindex -v",
     )
-    parser.add_argument("files", nargs="?", help="Files to be processed")
-
     parser.add_argument(
         "--env",
         required=False,
@@ -603,7 +601,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     load_dotenv(".azure/{0}/.env".format(args.env), override=True)
-
+    files = "{0}/data/{1}/*".format(os.getcwd(), args.env)
     storageaccount = os.getenv("AZURE_STORAGE_ACCOUNT")
     container = os.getenv("AZURE_STORAGE_CONTAINER")
     storagekey = os.getenv("AZURE_STORAGE_KEY")
@@ -678,8 +676,8 @@ if __name__ == "__main__":
 
     print("Processing files...")
     if not args.datalakestorageaccount:
-        print(f"Using local files in {args.files}")
-        read_files(args.files, use_vectors, compute_vectors_in_batch, openaideployment, openaimodelname)
+        print(f"Using local files in {files}")
+        read_files(files, use_vectors, compute_vectors_in_batch, openaideployment, openaimodelname)
     else:
         print(f"Using Data Lake Gen2 Storage Account {args.datalakestorageaccount}")
         read_adls_gen2_files(use_vectors, compute_vectors_in_batch, args.openaideployment, args.openaimodelname)
