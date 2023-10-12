@@ -497,30 +497,32 @@ def read_files(
     and execute indexing for the individual files
     """
     for filename in sorted(glob.glob(path_pattern), reverse=True):
+        try:
+            if verbose:
+                print(f"Processing '{filename}'")
 
-        if verbose:
-            print(f"Processing '{filename}'")
+            if os.path.isdir(filename):
+                read_files(filename + "/*", use_vectors, vectors_batch_support, embedding_deployment, embedding_model)
+                continue
 
-        if os.path.isdir(filename):
-            read_files(filename + "/*", use_vectors, vectors_batch_support, embedding_deployment, embedding_model)
+            upload_blobs(filename)
+            page_map = get_document_text(filename)
+
+            sections = create_sections(
+                os.path.basename(filename),
+                page_map,
+                use_vectors and not vectors_batch_support,
+                embedding_deployment,
+                embedding_model,
+            )
+            if use_vectors and vectors_batch_support:
+                sections = update_embeddings_in_batch(sections)
+            index_sections(os.path.basename(filename), sections)
+            file_n = str(filename).split("\\")[-1]
+            folder = filename[:-(len(file_n)+1)]
+            os.rename(filename, "{0}_archive/{1}".format(folder, file_n))
+        except:
             continue
-
-        upload_blobs(filename)
-        page_map = get_document_text(filename)
-
-        sections = create_sections(
-            os.path.basename(filename),
-            page_map,
-            use_vectors and not vectors_batch_support,
-            embedding_deployment,
-            embedding_model,
-        )
-        if use_vectors and vectors_batch_support:
-            sections = update_embeddings_in_batch(sections)
-        index_sections(os.path.basename(filename), sections)
-        file_n = str(filename).split("\\")[-1]
-        folder = filename[:-(len(file_n)+1)]
-        os.rename(filename, "{0}_archive/{1}".format(folder, file_n))
 
         
 def read_adls_gen2_files(
@@ -601,7 +603,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     load_dotenv(".azure/{0}/.env".format(args.env), override=True)
-    files = "{0}/data/{1}/*".format(os.getcwd(), args.env)
+    files = "{0}/../data/{1}/*".format(os.getcwd(), args.env)
     storageaccount = os.getenv("AZURE_STORAGE_ACCOUNT")
     container = os.getenv("AZURE_STORAGE_CONTAINER")
     storagekey = os.getenv("AZURE_STORAGE_KEY")

@@ -37,7 +37,7 @@ hooks:
         shell: pwsh
         run: ./scripts/auth_update.ps1;./scriptsV2/prepdocs.ps1;
         interactive: true
-        continueOnError: false
+        continueOnError: true
       posix:
         shell: sh
         run: ./scripts/auth_update.sh;./scriptsV2/prepdocs.sh;

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
-load_dotenv(".azure/bundestag/.env", override=True)
+load_dotenv()
 
 app = Flask(__name__, static_folder="static")
 
@@ -252,10 +252,9 @@ def conversation_with_data(request_body):
     endpoint = f"{base_url}openai/deployments/{AZURE_OPENAI_MODEL}/extensions/chat/completions?api-version={AZURE_OPENAI_PREVIEW_API_VERSION}"
     history_metadata = request_body.get("history_metadata", {})
 
-    if True or not SHOULD_STREAM:
+    if not SHOULD_STREAM:
         r = requests.post(endpoint, headers=headers, json=body)
         status_code = r.status_code
-        print(r.text)
         r = r.json()
         r['history_metadata'] = history_metadata
 
