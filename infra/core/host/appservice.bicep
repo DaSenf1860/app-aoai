@@ -40,7 +40,7 @@ param ftpsState string = 'FtpsOnly'
 param healthCheckPath string = ''
 
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
-  name: name
+  name: 'dip-chatbot-demo'
   location: location
   tags: tags
   kind: kind

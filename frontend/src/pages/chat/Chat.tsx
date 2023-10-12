@@ -8,7 +8,7 @@ import rehypeRaw from "rehype-raw";
 import uuid from 'react-uuid';
 
 import styles from "./Chat.module.css";
-import Azure from "../../assets/Azure.svg";
+import Azure from "../../assets/dip.png";
 
 import {
     ChatMessage,
@@ -554,8 +554,8 @@ const Chat = () => {
                                     className={styles.chatIcon}
                                     aria-hidden="true"
                                 />
-                                <h1 className={styles.chatEmptyStateTitle}>Mit dem chatten starten</h1>
-                                <h2 className={styles.chatEmptyStateSubtitle}>Dieser Chatbot is so konfiguriert, dass er Ihre Frage anhand der Dokumente des DIP beantwortet</h2>
+                                <h1 className={styles.chatEmptyStateTitle}>Mit dem Chatten starten</h1>
+                                <h2 className={styles.chatEmptyStateSubtitle}>Dieser Chatbot is so konfiguriert, dass er Ihre Frage anhand der Dokumente des DIP beantwortet.</h2>
                             </Stack>
                         ) : (
                             <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? "40px" : "0px"}} role="log">
